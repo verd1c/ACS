@@ -17,6 +17,7 @@ typedef struct SysCall_t {
     int allowance;          // times allowed to be run per sec
 
     struct SysCall_t* next;
+    struct SysCall_t* nextInCombo;
 } SysCall;
 
 typedef struct Instructions_t{

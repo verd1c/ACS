@@ -3,8 +3,8 @@
 #include <string.h>
 #include "acs.h"
 
-static Instructions *instr;
-static SysCall *combo;
+static Instructions* instr;
+static SysCall* combo;
 
 static inline int hash(long code){
     return (code * HASH_MULTIPLIER) % TABLE_SIZE;
@@ -32,8 +32,45 @@ void print_instr(void){
     }
 }
 
-SysCall *insert(Instructions *i, char *name, long code, int allowance){
-    SysCall *iter;
+SysCall* lookup_code(Instructions* i, long code){
+    SysCall* s;
+    int h;
+
+    h = hash(code);
+
+    s = i->table[h];
+
+    while(s){
+        if(s->code == code)
+            return s;
+
+        s = s->next;
+    }
+
+    return NULL;
+}
+
+SysCall* lookup_name(Instructions* i, char* name){
+    SysCall* s;
+    int j;
+
+    // iterate everything
+    for(j = 0; j < TABLE_SIZE; j++){
+        s = i->table[j];
+
+        while(s){
+            if(strcmp(s->name, name) == 0)
+                return s;
+
+            s = s->next;
+        }
+    }
+
+    return NULL;
+}
+
+SysCall* insert(Instructions* i, char* name, long code, int allowance){
+    SysCall* iter;
     int h;
 
     h = hash(code);
@@ -82,7 +119,7 @@ static void trim_name(char* dst, char* src){
 
 // initialize syscalls using defined file
 int init_syscalls(void){
-    FILE *fp;
+    FILE* fp;
     char c, *token, line[BUFFLEN];
     int count;
 
@@ -134,18 +171,12 @@ Instructions* init_instructions(void){
     return iTable;
 }
 
-int acs_init_structions(char *filename){
+int acs_init_structions(Instructions* in, char *filename){
     FILE *fp;
     char c, chain[200];
     char syscall[50];
     int line_no = 0, count = 0, allowance;
-
-    /* init instructions */
-    instr = (Instructions*)malloc(sizeof(Instructions));
-    if(!instr){
-        fprintf(stderr, "acs: error: memory allocation failed");
-        return 0;
-    }
+    SysCall* s;
 
     fp = fopen(filename, "r");
 
@@ -159,7 +190,8 @@ int acs_init_structions(char *filename){
     printf("\n");
 
     while(fscanf(fp, "%s %d", syscall, &allowance) == 2){
-        printf("Read: %s %d\n", syscall, allowance);
+        s = lookup_name(in, syscall);
+        s->allowance = allowance;
     }
 
     fclose(fp);
@@ -175,6 +207,12 @@ int acs_init(char *filename){
     init_syscalls();
 
     print_instr();
+
+    acs_init_structions(instr, filename);
+
+    print_instr();
+
+    return 1;
 }
 
 int acs_monitor(){
