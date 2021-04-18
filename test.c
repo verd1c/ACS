@@ -9,7 +9,7 @@ int main(int argc, char **argv){
         exit(0);
     }
 
-    if(!acs_init_structions(argv[1])){
+    if(!acs_init(argv[1])){
         printf("acs: error: initialization failed, exiting!\n");
         exit(0);
     }

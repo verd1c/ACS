@@ -1,0 +1,4 @@
+mprotect mprotect munmap
+clone 5
+mmap 6
+gettid 3
