@@ -3,14 +3,11 @@
 #include <string.h>
 #include "acs.h"
 
-static Instructions* instr;
-static SysCall* combo;
-
 static inline int hash(long code){
     return (code * HASH_MULTIPLIER) % TABLE_SIZE;
 }
 
-void print_instr(void){
+void print_instr(Instructions* instr){
     SysCall* s;
     int i;
 
@@ -32,13 +29,13 @@ void print_instr(void){
     }
 }
 
-SysCall* lookup_code(Instructions* i, long code){
+SysCall* lookup_code(Instructions* instr, long code){
     SysCall* s;
     int h;
 
     h = hash(code);
 
-    s = i->table[h];
+    s = instr->table[h];
 
     while(s){
         if(s->code == code)
@@ -50,13 +47,13 @@ SysCall* lookup_code(Instructions* i, long code){
     return NULL;
 }
 
-SysCall* lookup_name(Instructions* i, char* name){
+SysCall* lookup_name(Instructions* instr, char* name){
     SysCall* s;
-    int j;
+    int i;
 
     // iterate everything
-    for(j = 0; j < TABLE_SIZE; j++){
-        s = i->table[j];
+    for(i = 0; i < TABLE_SIZE; i++){
+        s = instr->table[i];
 
         while(s){
             if(strcmp(s->name, name) == 0)
@@ -69,22 +66,22 @@ SysCall* lookup_name(Instructions* i, char* name){
     return NULL;
 }
 
-SysCall* insert(Instructions* i, char* name, long code, int allowance){
+SysCall* insert(Instructions* instr, char* name, long code, int allowance){
     SysCall* iter;
     int h;
 
     h = hash(code);
 
-    if(i->table[h] == NULL){
-        i->table[h] = (SysCall*)malloc(sizeof(SysCall));
-        i->table[h]->name = strdup(name);
-        i->table[h]->code = code;
-        i->table[h]->allowance = allowance;
-        i->table[h]->next = NULL;
+    if(instr->table[h] == NULL){
+        instr->table[h] = (SysCall*)malloc(sizeof(SysCall));
+        instr->table[h]->name = strdup(name);
+        instr->table[h]->code = code;
+        instr->table[h]->allowance = allowance;
+        instr->table[h]->next = NULL;
 
-        iter = i->table[h];
+        iter = instr->table[h];
     }else{
-        iter = i->table[h];
+        iter = instr->table[h];
 
         while(iter->next != NULL){
             iter = iter->next;
@@ -118,7 +115,7 @@ static void trim_name(char* dst, char* src){
 }
 
 // initialize syscalls using defined file
-int init_syscalls(void){
+int init_syscalls(Instructions* instr){
     FILE* fp;
     char c, *token, line[BUFFLEN];
     int count;
@@ -171,7 +168,7 @@ Instructions* init_instructions(void){
     return iTable;
 }
 
-int acs_init_structions(Instructions* in, char *filename){
+int setup_instructions(Instructions* instr, char *filename){
     FILE *fp;
     char c, chain[200];
     char syscall[50];
@@ -190,7 +187,7 @@ int acs_init_structions(Instructions* in, char *filename){
     printf("\n");
 
     while(fscanf(fp, "%s %d", syscall, &allowance) == 2){
-        s = lookup_name(in, syscall);
+        s = lookup_name(instr, syscall);
         s->allowance = allowance;
     }
 
@@ -199,18 +196,20 @@ int acs_init_structions(Instructions* in, char *filename){
     return 1;
 }
 
-int acs_init(char *filename){
+int trigger(){
 
+}
 
-    instr = init_instructions();
+int acs_init(ACS* a, char* filename){
 
-    init_syscalls();
+    if(!a)
+        return 0;
 
-    print_instr();
+    a->instr = init_instructions();
 
-    acs_init_structions(instr, filename);
+    init_syscalls(a->instr);
 
-    print_instr();
+    setup_instructions(a->instr, filename);
 
     return 1;
 }

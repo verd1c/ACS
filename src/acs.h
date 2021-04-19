@@ -8,21 +8,32 @@
 
 #define BUFFLEN             256
 
-int acs_init(char *filename);
+typedef struct SysCall SysCall;
+typedef struct Instructions Instructions;
+typedef struct ACS ACS;
+
+int acs_init(ACS* a, char* filename);
 int acs_monitor();
 
-typedef struct SysCall_t {
+struct SysCall {
     const char *name;       // syscall name
     int code;               // syscall number
     int allowance;          // times allowed to be run per sec
 
-    struct SysCall_t* next;
-    struct SysCall_t* nextInCombo;
-} SysCall;
+    struct SysCall* next;
+    struct SysCall* nextInCombo;
+};
 
-typedef struct Instructions_t{
+struct Instructions{
     SysCall* table[TABLE_SIZE];
     long length;
-} Instructions;
+};
+
+struct ACS {
+    Instructions* instr;
+
+    SysCall* combo; // combo list
+    int cc; // combo counter
+};
 
 #endif
