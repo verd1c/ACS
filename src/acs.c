@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <sys/user.h>
 #include "acs.h"
 
 static inline int hash(long code){
@@ -26,6 +30,19 @@ void print_instr(Instructions* instr){
 
             s = s->next;
         }
+    }
+}
+
+void print_combo(ACS* a){
+    SysCall* s;
+
+    printf("=================================\n");
+    printf("Combo List\n");
+    printf("=================================\n");
+    s = a->combo;
+    while(s){
+        printf("SysCall [%-30s] [%-7d] [%-7d] \n", s->name, s->code, s->allowance);
+        s = s->nextInCombo;
     }
 }
 
@@ -168,26 +185,60 @@ Instructions* init_instructions(void){
     return iTable;
 }
 
-int setup_instructions(Instructions* instr, char *filename){
+void add_combo(ACS* a, SysCall* s){
+    SysCall* iter;
+
+    iter = a->combo;
+    s->nextInCombo = (SysCall*)0;
+
+    if(!iter){
+        a->combo = s;
+        a->currCombo = s;
+        return;
+    }
+
+    while(iter->nextInCombo){
+        iter = iter->nextInCombo;
+    }
+
+    iter->nextInCombo = s;
+    return;
+}
+
+int setup_instructions(ACS* a, char *filename){
     FILE *fp;
-    char c, chain[200];
-    char syscall[50];
+    char c, chain[BUFFLEN * 2], *token, syscall[BUFFLEN];
     int line_no = 0, count = 0, allowance;
     SysCall* s;
 
     fp = fopen(filename, "r");
 
     /* read first line */
+    memset(chain, '\0', BUFFLEN * 2);
     c = getc(fp);
     while(c != '\n' && c != EOF){
         chain[count++] = c;
-        printf("%c", c);
         c = getc(fp);
     }
-    printf("\n");
+
+    // tokenize first line
+
+    token = strtok(chain, " ");
+    while(token != NULL){
+        // create combo syscall
+        s = (SysCall*)malloc(sizeof(SysCall));
+        s->name = strdup(token);
+        s->code = lookup_name(a->instr, token)->code;
+        s->allowance = -1;
+        s->next = (SysCall*)0;
+        s->nextInCombo = (SysCall*)0;
+
+        add_combo(a, s);
+        token = strtok(NULL, " ");
+    }
 
     while(fscanf(fp, "%s %d", syscall, &allowance) == 2){
-        s = lookup_name(instr, syscall);
+        s = lookup_name(a->instr, syscall);
         s->allowance = allowance;
     }
 
@@ -201,6 +252,9 @@ int trigger(){
 }
 
 int acs_init(ACS* a, char* filename){
+    a->instr = (Instructions*)0;
+    a->combo = (SysCall*)0;
+    a->currCombo = (SysCall*)0;
 
     if(!a)
         return 0;
@@ -209,11 +263,29 @@ int acs_init(ACS* a, char* filename){
 
     init_syscalls(a->instr);
 
-    setup_instructions(a->instr, filename);
+    setup_instructions(a, filename);
+
+    //print_instr(a->instr);
+    //print_combo(a);
 
     return 1;
 }
 
-int acs_monitor(){
+int acs_monitor(ACS* a, char* filename){
+    pid_t child;
+    int syscall;
+    struct user_regs_struct regs;
 
+    child = fork();
+    if(child == 0){
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+        execv(filename, NULL);
+    }else{
+        while(1){
+            wait(NULL); // wait child to get sig
+            syscall = ptrace(PTRACE_PEEKUSER, child, sizeof(long) * RAX);
+            printf("%ld\n", syscall);
+        }
+    }
+    return 0;
 }

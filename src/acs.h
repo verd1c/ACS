@@ -33,7 +33,7 @@ struct ACS {
     Instructions* instr;
 
     SysCall* combo; // combo list
-    int cc; // combo counter
+    SysCall* currCombo; // combo counter
 };
 
 #endif
