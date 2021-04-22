@@ -11,6 +11,13 @@ int main(){
     pid_t pid;
 
     pid = getpid();
+    sleep(2);
+    pid = getpid();
+    pid = getpid();
+    pid = getpid();
+    pid = getpid();
+    pid = getpid();
+    pid = getpid();
 
     printf("%d\n", pid);
 

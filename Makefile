@@ -1,2 +1,2 @@
 default:
-	gcc test.c src/acs.c -o test -g
+	gcc test.c src/acs.c -o test -g -Wall

@@ -10,12 +10,12 @@ int main(int argc, char **argv){
         exit(0);
     }
 
-    if(!acs_init(&a, argv[2])){
+    if(!acs_init(&a, argv[1])){
         printf("acs: error: initialization failed, exiting!\n");
         exit(0);
     }
 
-    if(!acs_monitor(&a, argv[1])){
+    if(!acs_monitor(&a, argv[2])){
         printf("acs: error: monitoring failed, exiting!\n");
         exit(0);
     }
