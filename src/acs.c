@@ -302,6 +302,7 @@ int setup_instructions(ACS* a, char *filename){
 void print_history(ACS *a){
     SysCallQueue *h = a->history;
     HistoryEntry *s;
+    SysCall *c;
     int i, iter;
 
     printf("========================\n");
@@ -311,7 +312,14 @@ void print_history(ACS *a){
     i = h->front;
     while(iter < h->size){
         s = h->array[i];
-        printf("HistoryEntry [%-7ld] [%-7ld]\n", s->code, s->timestamp);
+
+        c = lookup_code(a->instr, s->code);
+
+        if(!c){
+            continue;
+        }
+
+        printf("HistoryEntry [%-15s] : [%-7ld] -> [%-7ld]\n", c->name, s->code, s->timestamp);
         i = (i + 1) % h->capacity;
         iter++;
     }
@@ -322,7 +330,7 @@ int check_combo(ACS *a){
     SysCall *combo = a->combo;
     HistoryEntry *s, *d;
     SysCallQueue *h = a->history;
-    int i, iter, j, jiter;
+    int i, iter, j, jiter, count;
 
     iter = 0;
     i = h->front;
@@ -331,10 +339,12 @@ int check_combo(ACS *a){
         s = h->array[i];
 
         combo = a->combo;
+        count = 0;
         if(combo->code == s->code){
             
             jiter = iter + 1;
             j = (i + 1) % h->capacity;
+            combo = combo->nextInCombo;
             while(jiter < h->size){
                 d = h->array[j];
 
@@ -343,6 +353,7 @@ int check_combo(ACS *a){
 
                 if(combo->code == d->code){
                     combo = combo->nextInCombo;
+                    count++;
                 }
                 j = (j + 1) % h->capacity;
                 jiter++;
@@ -426,7 +437,7 @@ int trace(ACS *a, pid_t child){
 
 
         // orig_eax on 32bit, orig_rax on 64bit
-        syscall = ptrace(PTRACE_PEEKUSER, child, sizeof(long) * ORIG_RAX);
+        syscall = ptrace(PTRACE_PEEKUSER, child, 4 * ORIG_EAX);
 
         s = lookup_code(a->instr, syscall);
         if(!s){
@@ -442,6 +453,7 @@ int trace(ACS *a, pid_t child){
 
         enqueue(a->history, e);
         printf("----------------------------\nSys: %ld : %s at timestamp: %ld\n", syscall, s->name, timeinfo->tm_sec);
+        //print_history(a);
         //print_history(a);
         if(!a->is_triggered){
             // check combo

@@ -11,8 +11,13 @@ int main(){
     pid_t pid;
 
     pid = getpid();
-    sleep(2);
+    chdir("..");
+    chdir("..");
     pid = getpid();
+    sleep(2);
+    chdir("..");
+    chdir("..");
+    chdir("..");
     pid = getpid();
     pid = getpid();
     pid = getpid();

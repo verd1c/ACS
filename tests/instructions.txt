@@ -1,5 +1,5 @@
 mprotect mprotect munmap
 clone 5
-mmap 6
+mmap 12
 gettid 3
-getpid 5
+chdir 2

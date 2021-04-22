@@ -2,7 +2,7 @@
 #define __ACS_H__
 
 
-#define SYS_CALL_TABLE_F    "/usr/include/x86_64-linux-gnu/asm/unistd_64.h"
+#define SYS_CALL_TABLE_F    "/usr/include/i386-linux-gnu/asm/unistd_32.h"
 
 #define TABLE_SIZE          64
 #define HASH_MULTIPLIER     65599
